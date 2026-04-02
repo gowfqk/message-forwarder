@@ -449,9 +449,18 @@ def serve_static(filename):
 
 
 if __name__ == '__main__':
+    import os
     print('=' * 50)
     print('  消息推送转发服务 - Web 管理界面')
     print('=' * 50)
     print(f'  访问地址：http://localhost:5000')
     print('=' * 50)
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    
+    # 生产环境使用 waitress，开发环境使用 Flask
+    try:
+        from waitress import serve
+        print('[Production] Starting with Waitress...')
+        serve(app, host='0.0.0.0', port=5000, threads=4)
+    except ImportError:
+        print('[Development] Starting with Flask...')
+        app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
