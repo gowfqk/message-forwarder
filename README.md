@@ -275,7 +275,6 @@ services:
       interval: 30s   # 健康检查间隔
       timeout: 10s    # 超时时间
       retries: 3      # 重试次数
-    command: ["all"]  # 启动模式：all/forwarder/web
 ```
 
 ### 配置说明

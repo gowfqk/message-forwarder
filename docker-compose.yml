@@ -9,7 +9,6 @@ services:
       - "3000:3000"
       - "5000:5000"
     volumes:
-      # 配置目录挂载
       - ./config:/app/config
       - ./logs:/app/logs
       - ./cache:/app/cache
@@ -21,4 +20,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    command: ["all"]
