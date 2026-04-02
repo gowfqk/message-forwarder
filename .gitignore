@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/*.log
+logs/forward.log
+
+# Cache
+cache/*.json
+cache/tokens.json
+
+# Runtime
+*.pid
+.server.pid
+
+# Test
+test_*.py
+check_*.py
+diagnose*.py
+
+# Backup
+*.bak
+*.tmp
+*.old
+
+# Secrets (optional - uncomment if needed)
+# config.json

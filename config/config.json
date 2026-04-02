@@ -1,0 +1,39 @@
+﻿{
+    "server":  {
+                   "path":  "/webhook",
+                   "port":  3000
+               },
+    "channels":  {
+                     "wechat_webhook":  {
+                                            "url":  "",
+                                            "type":  "webhook",
+                                            "enabled":  false
+                                        },
+                     "telegram":  {
+                                      "chatId":  "",
+                                      "botToken":  "",
+                                      "type":  "bot",
+                                      "enabled":  false
+                                  },
+                     "email":  {
+                                   "smtpHost":  "",
+                                   "password":  "",
+                                   "smtpPort":  465,
+                                   "username":  "",
+                                   "type":  "smtp",
+                                   "to":  "",
+                                   "enabled":  false
+                               },
+                     "wechat_app":  {
+                                        "corpsecret":  "",
+                                        "corpid":  "",
+                                        "touser":  "@all",
+                                        "type":  "app",
+                                        "agentid":  0,
+                                        "enabled":  false
+                                    }
+                 },
+    "auth":  {
+                 "token":  "your-secret-token-here"
+             }
+}

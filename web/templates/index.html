@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消息推送转发服务</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header { background: #fff; padding: 20px; margin-bottom: 20px; border: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 20px; color: #333; }
+        .status { padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: 500; }
+        .status.on { background: #10b981; color: #fff; }
+        .status.off { background: #ef4444; color: #fff; }
+        .card { background: #fff; border: 1px solid #e0e0e0; margin-bottom: 15px; }
+        .card-header { padding: 15px 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+        .card-header h2 { font-size: 15px; font-weight: 600; color: #333; }
+        .card-body { padding: 20px; display: none; }
+        .card-body.open { display: block; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 13px; color: #666; font-weight: 500; }
+        .form-group input { width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .form-group input:focus { outline: none; border-color: #667eea; }
+        .checkbox { display: flex; align-items: center; gap: 8px; }
+        .checkbox input { width: auto; }
+        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; }
+        .btn-primary { background: #667eea; color: #fff; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-success { background: #10b981; color: #fff; }
+        .btn-danger { background: #ef4444; color: #fff; }
+        .btn-secondary { background: #6b7280; color: #fff; }
+        .btn-sm { padding: 4px 10px; font-size: 12px; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .actions { padding: 15px 20px; border-top: 1px solid #e0e0e0; display: flex; gap: 10px; }
+        .log-box { background: #1e1e1e; color: #d4d4d4; padding: 15px; font-family: 'Consolas', monospace; font-size: 12px; max-height: 300px; overflow-y: auto; }
+        .log-line { margin-bottom: 4px; }
+        .text-success { color: #10b981; }
+        .text-danger { color: #ef4444; }
+        .text-info { color: #60a5fa; }
+        .toggle-icon { transition: transform 0.2s; }
+        .toggle-icon.open { transform: rotate(90deg); }
+        .badge { background: #e0e0e0; padding: 2px 8px; border-radius: 3px; font-size: 11px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📨 消息推送转发服务</h1>
+            <span id="statusBadge" class="status off">已停止</span>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <h2>⚙️ 服务控制</h2>
+                <span class="toggle-icon">▶</span>
+            </div>
+            <div class="card-body open">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>PID</label>
+                        <input type="text" id="pidValue" readonly value="-">
+                    </div>
+                    <div class="form-group">
+                        <label>Token 缓存</label>
+                        <input type="text" id="tokenStatus" readonly value="-">
+                    </div>
+                </div>
+                <div class="actions" style="padding: 0; border: none;">
+                    <button id="btnStart" class="btn btn-success" onclick="startServer()">启动</button>
+                    <button id="btnStop" class="btn btn-danger" onclick="stopServer()" disabled>停止</button>
+                    <button class="btn btn-secondary" onclick="refreshStatus()">刷新状态</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <h2>🔑 基础配置</h2>
+                <span class="toggle-icon">▶</span>
+            </div>
+            <div class="card-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>服务端口</label>
+                        <input type="number" id="serverPort" value="3000">
+                    </div>
+                    <div class="form-group">
+                        <label>Webhook 路径</label>
+                        <input type="text" id="webhookPath" value="/webhook">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>认证 Token</label>
+                    <input type="text" id="authToken" placeholder="your-secret-token">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <h2>💬 企业微信应用</h2>
+                <span class="badge" id="wechatAppBadge">禁用</span>
+                <span class="toggle-icon">▶</span>
+            </div>
+            <div class="card-body">
+                <div class="checkbox form-group">
+                    <input type="checkbox" id="wechatAppEnabled" onchange="updateBadge('wechatAppBadge', this.checked)">
+                    <label>启用</label>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Corp ID</label>
+                        <input type="text" id="corpId" placeholder="ww1234567890">
+                    </div>
+                    <div class="form-group">
+                        <label>Agent ID</label>
+                        <input type="number" id="agentId" placeholder="1000001">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Secret</label>
+                    <input type="password" id="corpSecret" placeholder="应用 Secret">
+                </div>
+                <div class="form-group">
+                    <label>接收人</label>
+                    <input type="text" id="touser" value="@all" placeholder="@all 或 UserID">
+                </div>
+                <div class="actions" style="padding: 0; border: none;">
+                    <button class="btn btn-secondary btn-sm" onclick="testChannel('wechat_app')">🧪 测试推送</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <h2>🤖 企业微信机器人</h2>
+                <span class="badge" id="wechatWebhookBadge">禁用</span>
+                <span class="toggle-icon">▶</span>
+            </div>
+            <div class="card-body">
+                <div class="checkbox form-group">
+                    <input type="checkbox" id="wechatWebhookEnabled" onchange="updateBadge('wechatWebhookBadge', this.checked)">
+                    <label>启用</label>
+                </div>
+                <div class="form-group">
+                    <label>Webhook URL</label>
+                    <input type="text" id="wechatWebhookUrl" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx">
+                </div>
+                <div class="actions" style="padding: 0; border: none;">
+                    <button class="btn btn-secondary btn-sm" onclick="testChannel('wechat_webhook')">🧪 测试推送</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <h2>✈️ Telegram</h2>
+                <span class="badge" id="telegramBadge">禁用</span>
+                <span class="toggle-icon">▶</span>
+            </div>
+            <div class="card-body">
+                <div class="checkbox form-group">
+                    <input type="checkbox" id="telegramEnabled" onchange="updateBadge('telegramBadge', this.checked)">
+                    <label>启用</label>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Bot Token</label>
+                        <input type="text" id="telegramToken" placeholder="123456:ABC-DEF...">
+                    </div>
+                    <div class="form-group">
+                        <label>Chat ID</label>
+                        <input type="text" id="telegramChatId" placeholder="-1001234567890">
+                    </div>
+                </div>
+                <div class="actions" style="padding: 0; border: none;">
+                    <button class="btn btn-secondary btn-sm" onclick="testChannel('telegram')">🧪 测试推送</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <h2>📧 邮件通知</h2>
+                <span class="badge" id="emailBadge">禁用</span>
+                <span class="toggle-icon">▶</span>
+            </div>
+            <div class="card-body">
+                <div class="checkbox form-group">
+                    <input type="checkbox" id="emailEnabled" onchange="updateBadge('emailBadge', this.checked)">
+                    <label>启用</label>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>SMTP 服务器</label>
+                        <input type="text" id="smtpHost" placeholder="smtp.example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>端口</label>
+                        <input type="number" id="smtpPort" value="465">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>发件人</label>
+                        <input type="email" id="smtpUsername" placeholder="your@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>授权码</label>
+                        <input type="password" id="smtpPassword" placeholder="auth code">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>收件人</label>
+                    <input type="email" id="smtpTo" placeholder="recipient@example.com">
+                </div>
+                <div class="actions" style="padding: 0; border: none;">
+                    <button class="btn btn-secondary btn-sm" onclick="testChannel('email')">📧 测试发送</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="actions">
+                <button class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
+                <button class="btn btn-secondary" onclick="loadConfig()">🔄 重新加载</button>
+                <span id="saveMsg" style="margin-left: 10px; color: #10b981;"></span>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header" onclick="toggleCard(this)">
+                <h2>📋 运行日志</h2>
+                <span class="toggle-icon">▶</span>
+            </div>
+            <div class="card-body">
+                <div class="actions" style="padding: 0 0 15px 0; border: none;">
+                    <button class="btn btn-secondary btn-sm" onclick="refreshLogs()">刷新</button>
+                    <button class="btn btn-secondary btn-sm" onclick="clearLogs()">清空</button>
+                </div>
+                <div id="logContainer" class="log-box"><div class="log-line">暂无日志</div></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = { status: '/api/status', config: '/api/config', logs: '/api/logs', start: '/api/start', stop: '/api/stop', test: '/api/test' };
+        
+        document.addEventListener('DOMContentLoaded', () => { refreshStatus(); loadConfig(); refreshLogs(); setInterval(refreshStatus, 10000); });
+
+        function toggleCard(header) {
+            const body = header.nextElementSibling;
+            const icon = header.querySelector('.toggle-icon');
+            body.classList.toggle('open');
+            icon.classList.toggle('open');
+        }
+
+        function updateBadge(id, enabled) {
+            document.getElementById(id).textContent = enabled ? '启用' : '禁用';
+        }
+
+        async function refreshStatus() {
+            try {
+                const res = await fetch(API.status);
+                const data = await res.json();
+                const badge = document.getElementById('statusBadge');
+                badge.className = 'status ' + (data.running ? 'on' : 'off');
+                badge.textContent = data.running ? '运行中' : '已停止';
+                document.getElementById('btnStart').disabled = data.running;
+                document.getElementById('btnStop').disabled = !data.running;
+                document.getElementById('pidValue').value = data.pid || '-';
+                document.getElementById('tokenStatus').value = data.token_cached ? '✓ 已缓存' : '✗ 未缓存';
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadConfig() {
+            try {
+                const res = await fetch(API.config);
+                const cfg = await res.json();
+                document.getElementById('serverPort').value = cfg.server?.port || 3000;
+                document.getElementById('webhookPath').value = cfg.server?.path || '/webhook';
+                document.getElementById('authToken').value = cfg.auth?.token || '';
+                
+                const ch = cfg.channels || {};
+                if (ch.wechat_app) {
+                    document.getElementById('wechatAppEnabled').checked = ch.wechat_app.enabled;
+                    document.getElementById('corpId').value = ch.wechat_app.corpid || '';
+                    document.getElementById('corpSecret').value = ch.wechat_app.corpsecret || '';
+                    document.getElementById('agentId').value = ch.wechat_app.agentid || '';
+                    document.getElementById('touser').value = ch.wechat_app.touser || '@all';
+                    updateBadge('wechatAppBadge', ch.wechat_app.enabled);
+                }
+                if (ch.wechat_webhook) {
+                    document.getElementById('wechatWebhookEnabled').checked = ch.wechat_webhook.enabled;
+                    document.getElementById('wechatWebhookUrl').value = ch.wechat_webhook.url || '';
+                    updateBadge('wechatWebhookBadge', ch.wechat_webhook.enabled);
+                }
+                if (ch.telegram) {
+                    document.getElementById('telegramEnabled').checked = ch.telegram.enabled;
+                    document.getElementById('telegramToken').value = ch.telegram.botToken || '';
+                    document.getElementById('telegramChatId').value = ch.telegram.chatId || '';
+                    updateBadge('telegramBadge', ch.telegram.enabled);
+                }
+                if (ch.email) {
+                    document.getElementById('emailEnabled').checked = ch.email.enabled;
+                    document.getElementById('smtpHost').value = ch.email.smtpHost || '';
+                    document.getElementById('smtpPort').value = ch.email.smtpPort || 465;
+                    document.getElementById('smtpUsername').value = ch.email.username || '';
+                    document.getElementById('smtpPassword').value = ch.email.password || '';
+                    document.getElementById('smtpTo').value = ch.email.to || '';
+                    updateBadge('emailBadge', ch.email.enabled);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function saveConfig() {
+            const cfg = {
+                server: { port: parseInt(document.getElementById('serverPort').value), path: document.getElementById('webhookPath').value },
+                auth: { token: document.getElementById('authToken').value },
+                channels: {
+                    wechat_app: {
+                        enabled: document.getElementById('wechatAppEnabled').checked,
+                        type: 'app', corpid: document.getElementById('corpId').value,
+                        corpsecret: document.getElementById('corpSecret').value,
+                        agentid: parseInt(document.getElementById('agentId').value),
+                        touser: document.getElementById('touser').value
+                    },
+                    wechat_webhook: {
+                        enabled: document.getElementById('wechatWebhookEnabled').checked,
+                        type: 'webhook', url: document.getElementById('wechatWebhookUrl').value
+                    },
+                    telegram: {
+                        enabled: document.getElementById('telegramEnabled').checked,
+                        type: 'bot', botToken: document.getElementById('telegramToken').value,
+                        chatId: document.getElementById('telegramChatId').value
+                    },
+                    email: {
+                        enabled: document.getElementById('emailEnabled').checked,
+                        type: 'smtp', smtpHost: document.getElementById('smtpHost').value,
+                        smtpPort: parseInt(document.getElementById('smtpPort').value),
+                        username: document.getElementById('smtpUsername').value,
+                        password: document.getElementById('smtpPassword').value,
+                        to: document.getElementById('smtpTo').value
+                    }
+                }
+            };
+            try {
+                await fetch(API.config, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(cfg) });
+                document.getElementById('saveMsg').textContent = '✓ 已保存';
+                setTimeout(() => document.getElementById('saveMsg').textContent = '', 3000);
+            } catch (e) { alert('保存失败：' + e.message); }
+        }
+
+        async function startServer() {
+            try {
+                const res = await fetch('/api/server/start', {method: 'POST'});
+                const result = await res.json();
+                if (!result.success) alert('启动失败：' + result.message);
+                refreshStatus();
+            } catch (e) { alert('启动失败：' + e.message); }
+        }
+
+        async function stopServer() {
+            try {
+                const res = await fetch('/api/server/stop', {method: 'POST'});
+                const result = await res.json();
+                if (!result.success) alert('停止失败：' + result.message);
+                refreshStatus();
+            } catch (e) { alert('停止失败：' + e.message); }
+        }
+
+        async function refreshLogs() {
+            try {
+                const res = await fetch(API.logs);
+                const data = await res.json();
+                const logs = data.logs || [];
+                document.getElementById('logContainer').innerHTML = logs.length ? 
+                    logs.map(l => '<div class="log-line">' + l.replace(/</g,'&lt;') + '</div>').join('') : 
+                    '<div class="log-line text-info">暂无日志</div>';
+            } catch (e) { console.error(e); }
+        }
+
+        function clearLogs() {
+            document.getElementById('logContainer').innerHTML = '<div class="log-line text-info">日志已清空</div>';
+        }
+
+        async function testChannel(channel) {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '⏳ 测试中...';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch(`/api/test/${channel}`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                const result = await res.json();
+                
+                if (result.success) {
+                    btn.textContent = '✓ 成功';
+                    btn.className = 'btn btn-success btn-sm';
+                } else {
+                    btn.textContent = '✗ 失败';
+                    btn.className = 'btn btn-danger btn-sm';
+                    alert('测试失败：' + (result.error || '未知错误'));
+                }
+            } catch (e) {
+                btn.textContent = '✗ 错误';
+                btn.className = 'btn btn-danger btn-sm';
+                alert('测试失败：' + e.message);
+            }
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.className = 'btn btn-secondary btn-sm';
+                btn.disabled = false;
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
