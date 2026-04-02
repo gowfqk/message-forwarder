@@ -1,39 +1,45 @@
-﻿{
-    "server":  {
-                   "path":  "/webhook",
-                   "port":  3000
-               },
-    "channels":  {
-                     "wechat_webhook":  {
-                                            "url":  "",
-                                            "type":  "webhook",
-                                            "enabled":  false
-                                        },
-                     "telegram":  {
-                                      "chatId":  "",
-                                      "botToken":  "",
-                                      "type":  "bot",
-                                      "enabled":  false
-                                  },
-                     "email":  {
-                                   "smtpHost":  "",
-                                   "password":  "",
-                                   "smtpPort":  465,
-                                   "username":  "",
-                                   "type":  "smtp",
-                                   "to":  "",
-                                   "enabled":  false
-                               },
-                     "wechat_app":  {
-                                        "corpsecret":  "",
-                                        "corpid":  "",
-                                        "touser":  "@all",
-                                        "type":  "app",
-                                        "agentid":  0,
-                                        "enabled":  false
-                                    }
-                 },
-    "auth":  {
-                 "token":  "your-secret-token-here"
-             }
+{
+  "server": {
+    "port": 3000,
+    "path": "/webhook"
+  },
+  "auth": {
+    "token": "your-secret-token-here"
+  },
+  "channels": {
+    "wechat_webhook": {
+      "enabled": false,
+      "type": "webhook",
+      "url": ""
+    },
+    "wechat_app": {
+      "enabled": false,
+      "type": "app",
+      "corpid": "",
+      "corpsecret": "",
+      "agentid": 0,
+      "touser": "@all"
+    },
+    "telegram": {
+      "enabled": false,
+      "type": "bot",
+      "botToken": "",
+      "chatId": ""
+    },
+    "email": {
+      "enabled": false,
+      "type": "smtp",
+      "smtpHost": "",
+      "smtpPort": 465,
+      "username": "",
+      "password": "",
+      "to": ""
+    }
+  },
+  "token_cache": {
+    "enabled": true,
+    "file": "cache/tokens.json",
+    "refresh_ahead": 300
+  },
+  "logFile": "logs/forward.log"
 }

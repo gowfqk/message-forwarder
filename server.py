@@ -22,7 +22,10 @@ config_path = os.environ.get('CONFIG_PATH')
 if config_path:
     CONFIG_PATH = Path(config_path)
 else:
-    CONFIG_PATH = Path(__file__).parent / 'config.json'
+    # 优先使用 config/config.json，兼容旧的 config.json
+    CONFIG_PATH = Path(__file__).parent / 'config' / 'config.json'
+    if not CONFIG_PATH.exists():
+        CONFIG_PATH = Path(__file__).parent / 'config.json'
 with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
     CONFIG = json.load(f)
 
