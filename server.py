@@ -36,14 +36,23 @@ LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 TOKEN_CACHE = Path(CONFIG.get('token_cache', {}).get('file', 'cache/tokens.json'))
 TOKEN_CACHE.parent.mkdir(parents=True, exist_ok=True)
 
-# 配置日志
+# 配置日志（解决中文乱码）
+import sys
+import io
+
+# 确保控制台输出 UTF-8
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 logging.basicConfig(
     level=logging.INFO,
     format='[%(asctime)s] [%(levelname)s] %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S',
     handlers=[
         logging.FileHandler(LOG_FILE, encoding='utf-8'),
-        logging.StreamHandler()
+        logging.StreamHandler(stream=sys.stdout)
     ]
 )
 logger = logging.getLogger(__name__)

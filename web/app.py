@@ -450,6 +450,15 @@ def serve_static(filename):
 
 if __name__ == '__main__':
     import os
+    import sys
+    import io
+    
+    # 确保控制台输出 UTF-8
+    if sys.stdout.encoding != 'utf-8':
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    if sys.stderr.encoding != 'utf-8':
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    
     print('=' * 50)
     print('  消息推送转发服务 - Web 管理界面')
     print('=' * 50)
