@@ -36,5 +36,9 @@ EXPOSE 3000 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:3000/health')" || exit 1
 
-# 启动命令
-CMD ["python", "server.py"]
+# 复制启动脚本
+COPY start.sh .
+RUN chmod +x start.sh
+
+# 启动命令（同时启动转发服务和 Web 界面）
+CMD ["./start.sh"]
