@@ -71,7 +71,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-    command: ["all"]
 ```
 
 **4. 启动服务**
@@ -248,6 +247,40 @@ docker rm message-forwarder
 
 ---
 
+## ⚠️ 注意事项
+
+**1. 配置文件格式**
+
+确保 `config/config.json` 是文件而不是文件夹！
+
+```bash
+# 错误：Docker 会自动创建文件夹
+docker-compose up -d
+
+# 正确：先创建文件
+mkdir -p config
+nano config/config.json
+docker-compose up -d
+```
+
+**2. 配置文件编码**
+
+使用 **UTF-8 无 BOM** 编码保存 JSON 文件，否则会导致解析失败。
+
+**3. 端口占用**
+
+确保端口 3000 和 5000 未被占用：
+
+```bash
+# Windows
+netstat -ano | findstr :3000
+
+# Linux/Mac
+lsof -i :3000
+```
+
+---
+
 ## 📋 docker-compose.yml 完整配置
 
 ### 基础配置
@@ -286,7 +319,6 @@ services:
 | `ports` | 端口映射 | `3000:3000`（Webhook）<br>`5000:5000`（Web UI） |
 | `volumes` | 数据卷挂载 | `./config:/app/config`（配置）<br>`./logs:/app/logs`（日志）<br>`./cache:/app/cache`（缓存） |
 | `environment` | 环境变量 | `TZ=Asia/Shanghai`（时区）<br>`CONFIG_PATH`（配置文件路径） |
-| `command` | 启动命令 | `all`（所有服务）<br>`forwarder`（仅转发）<br>`web`（仅 Web UI） |
 
 ---
 
