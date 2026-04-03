@@ -1,0 +1,58 @@
+{
+  "server": {
+    "port": 3000,
+    "path": "/webhook"
+  },
+  "auth": {
+    "token": "204800"
+  },
+  "channels": {
+    "wechat_webhook": {
+      "enabled": true,
+      "type": "webhook",
+      "url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=c6be4707-4700-4497-8ad4-2e2b8c6c2950"
+    },
+    "wechat_app": {
+      "enabled": true,
+      "type": "app",
+      "corpid": "ww0a5b8d4134eff2f9",
+      "corpsecret": "3AoCldfNpZfRLDCxV-m6QLZfQWohx0PA_ei6egSKCx0",
+      "agentid": 1000003,
+      "touser": "@all",
+      "toparty": "",
+      "totag": ""
+    },
+    "dingtalk": {
+      "enabled": false,
+      "type": "webhook",
+      "url": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_TOKEN"
+    },
+    "telegram": {
+      "enabled": true,
+      "type": "bot",
+      "botToken": "8537127351:AAH0ZctjAHHhHOk03jToriOfy1Thm4-Vh7c",
+      "chatId": "691245891"
+    },
+    "email": {
+      "enabled": true,
+      "type": "smtp",
+      "smtpHost": "smtp.163.com",
+      "smtpPort": 465,
+      "username": "guowenqing43@163.com",
+      "password": "WLv6S36X2At7md6e",
+      "to": "qy1m@qq.com",
+      "cc": "",
+      "bcc": ""
+    }
+  },
+  "token_cache": {
+    "enabled": true,
+    "file": "cache/tokens.json",
+    "refresh_ahead": 300
+  },
+  "filters": {
+    "keywords": [],
+    "excludeKeywords": []
+  },
+  "logFile": "logs/forward.log"
+}
