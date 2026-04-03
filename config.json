@@ -1,0 +1,39 @@
+{
+  "server": {
+    "port": 3000,
+    "path": "/webhook"
+  },
+  "auth": {
+    "token": ""
+  },
+  "channels": {
+    "wechat_app": {
+      "enabled": true,
+      "type": "app",
+      "corpid": "werwsdfd",
+      "corpsecret": "65498432165496",
+      "agentid": 1000003,
+      "touser": "@all"
+    },
+    "wechat_webhook": {
+      "enabled": true,
+      "type": "webhook",
+      "url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=c6be4707-4700-4497-8ad4-2e2b8c6c2950"
+    },
+    "telegram": {
+      "enabled": false,
+      "type": "bot",
+      "botToken": "",
+      "chatId": ""
+    },
+    "email": {
+      "enabled": true,
+      "type": "smtp",
+      "smtpHost": "smtp.163.com",
+      "smtpPort": 465,
+      "username": "guowenqing43@163.com",
+      "password": "WLv6S36X2At7md6e",
+      "to": "dy1m@qq.com"
+    }
+  }
+}

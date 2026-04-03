@@ -402,10 +402,11 @@
                 if (result.success) {
                     btn.textContent = '✓ 成功';
                     btn.className = 'btn btn-success btn-sm';
+                    alert('测试成功：' + (result.message || '连接正常'));
                 } else {
                     btn.textContent = '✗ 失败';
                     btn.className = 'btn btn-danger btn-sm';
-                    alert('测试失败：' + (result.error || '未知错误'));
+                    alert('测试失败：' + (result.message || '未知错误'));
                 }
             } catch (e) {
                 btn.textContent = '✗ 错误';
