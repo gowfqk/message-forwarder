@@ -240,37 +240,36 @@ def send_to_wechat_webhook(message, original_data):
 
 
 def send_to_wechat_app(message, original_data):
-    """发送到企业微信自建应用"""
+    """发送到企业微信自建应用（支持 Markdown）"""
     channel = CONFIG['channels'].get('wechat_app', {})
     if not channel.get('enabled'):
         return {'success': False, 'reason': 'channel disabled'}
-    
+
     access_token = get_wechat_app_token()
     if not access_token:
         return {'success': False, 'error': 'Failed to get access_token'}
-    
+
     agentid = channel.get('agentid', 1000001)
     touser = channel.get('touser', '@all')
     toparty = channel.get('toparty', '')
     totag = channel.get('totag', '')
-    
+
     payload = {
         'touser': touser,
         'toparty': toparty,
         'totag': totag,
-        'msgtype': 'text',
+        'msgtype': 'markdown',
         'agentid': agentid,
-        'text': {
+        'markdown': {
             'content': format_message(message, original_data)
-        },
-        'safe': 0
+        }
     }
-    
+
     url = f'https://qyapi.weixin.qq.com/cgi-bin/message/send?access_token={access_token}'
-    
+
     # 确保中文正确编码
     result = send_http_request(url, data=payload, ensure_ascii=False)
-    
+
     # 检查返回结果
     if result.get('success'):
         try:
@@ -280,7 +279,7 @@ def send_to_wechat_app(message, original_data):
                 result['error'] = resp_data.get('errmsg', 'Unknown error')
         except:
             pass
-    
+
     return result
 
 
@@ -301,17 +300,18 @@ def send_to_dingtalk(message, original_data):
 
 
 def send_to_telegram(message, original_data):
-    """发送到 Telegram"""
+    """发送到 Telegram（支持 Markdown）"""
     channel = CONFIG['channels'].get('telegram', {})
     if not channel.get('enabled'):
         return {'success': False, 'reason': 'channel disabled'}
-    
+
     url = f"https://api.telegram.org/bot{channel['botToken']}/sendMessage"
     payload = {
         'chat_id': channel['chatId'],
-        'text': format_message(message, original_data)
+        'text': format_message(message, original_data),
+        'parse_mode': 'MarkdownV2'
     }
-    
+
     return send_http_request(url, data=payload)
 
 
