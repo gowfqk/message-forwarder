@@ -1,12 +1,10 @@
 [project]
-requires = ["nodejs-24"]
+requires = ["python3"]
 
 [dev]
-build = ["bash", "./scripts/prepare.sh"]
-run = ["bash", "./scripts/dev.sh"]
-deps = ["git"] # -> apt install git
+build = ["pip3", "install", "-r", "requirements.txt"]
+run = ["bash", "start.sh"]
 
 [deploy]
-build = ["bash","./scripts/build.sh"]
-run = ["bash","./scripts/start.sh"]
-deps = ["git"] # -> apt install git
+build = ["pip3", "install", "-r", "requirements.txt"]
+run = ["bash", "start.sh"]

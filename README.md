@@ -1,418 +1,495 @@
-# projects
+# 消息推送转发服务 🚀
 
-这是一个基于 Express + Vite + TypeScript + Tailwind CSS 的全栈 Web 应用项目，由扣子编程 CLI 创建。
+一个轻量级的 HTTP Webhook 服务，接收消息并转发到多个渠道（企业微信、钉钉、Telegram、邮件等）。
 
-**核心特性：**
-- 🚀 前端：Vite + TypeScript + Tailwind CSS
-- 🔧 后端：Express + TypeScript，提供 RESTful API
-- 🔥 开发模式：Vite HMR + Express API，单进程启动
-- 📦 生产模式：Express 静态服务 + API，高性能部署
+[![Docker Pulls](https://img.shields.io/docker/pulls/247798124/message-forwarder)](https://hub.docker.com/r/247798124/message-forwarder)
+[![Docker Image Size](https://img.shields.io/docker/image-size/247798124/message-forwarder/latest)](https://hub.docker.com/r/247798124/message-forwarder)
+[![GitHub](https://img.shields.io/github/license/gowfqk/message-forwarder)](LICENSE)
 
-## 快速开始
+---
 
-### 启动开发服务器
+## 🐳 Docker 部署（推荐）
+
+### 方式一：Docker Compose（最简单）
+
+**⚠️ 重要提示：** 首次启动前请确保 `config/config.json` 是文件而不是文件夹！
+
+**解决方法：**
+```bash
+# 如果 config.json 是文件夹，删除它
+rm -rf config.json
+# 或
+rmdir /s config.json
+
+# 创建 config 目录和配置文件
+mkdir -p config
+# 然后编辑 config/config.json
+```
+
+**1. 创建配置目录和文件**
 
 ```bash
-coze dev
+mkdir -p config
+nano config/config.json
 ```
 
-启动后，在浏览器中打开 [http://localhost:5000](http://localhost:5000) 查看应用。
-
-开发服务器支持热更新（HMR），修改代码后页面会自动刷新。
-
-### 构建生产版本
-
-```bash
-coze build
-```
-
-构建产物位于 `dist/` 目录，可直接部署到静态托管服务。
-
-### 预览生产版本
-
-```bash
-coze start
-```
-
-在本地启动一个静态服务器，预览生产构建的效果。
-
-## 项目结构
-
-```
-├── server/                # 后端服务器目录
-│   ├── index.ts          # express 服务器入口
-│   ├── routes/           # API 路由目录
-│   │   └── index.ts      # 路由定义
-│   └── vite.ts           # Vite 集成逻辑
-├── src/                   # 前端源码目录
-│   ├── index.ts          # 前端应用入口（初始化）
-│   ├── main.ts           # 前端主逻辑文件
-│   └── index.css         # 全局样式（包含 Tailwind 指令）
-├── index.html            # HTML 入口文件
-├── vite.config.ts        # Vite 配置
-├── tailwind.config.ts    # Tailwind CSS 配置
-└── tsconfig.json         # TypeScript 配置
-```
-
-**目录说明：**
-
-- **`server/`** - 后端服务器代码
-  - `server.ts` - 服务器主入口，负责创建和启动 Express 应用
-  - `routes/` - API 路由模块，支持按功能拆分路由
-  - `vite.ts` - Vite 开发服务器和静态文件服务集成
-
-- **`src/`** - 前端应用代码
-  - 所有前端相关代码都在这里
-
-**工作原理：**
-
-- **开发模式** (`coze dev`)：
-  - 运行 `server/server.ts` 启动 Express 服务器
-  - Vite 以 middleware 模式集成到 Express
-  - 前端支持 HMR（热模块替换）
-  - 后端 API 和前端在同一进程，端口 5000
-
-- **生产模式** (`coze start`)：
-  - `coze build` 构建前端 → `dist/` 目录
-  - `coze build` 构建后端 → `dist-server/index.js` (CommonJS 格式)
-  - 运行 `dist-server/index.js` 启动生产服务器
-  - Express 服务静态文件 + API 路由
-  - 单一 Node.js 进程，轻量高效
-
-## 核心开发规范
-
-### 1. 后端 API 开发
-
-**添加新的 API 路由**
-
-在 `server/routes/index.ts` 中添加路由：
-
-```typescript
-// GET 请求示例
-router.get('/api/users', (req, res) => {
-  res.json({
-    users: [
-      { id: 1, name: 'Alice' },
-      { id: 2, name: 'Bob' },
-    ],
-  });
-});
-
-// POST 请求示例
-router.post('/api/users', (req, res) => {
-  const userData = req.body;
-  // 处理业务逻辑
-  res.json({
-    success: true,
-    user: userData,
-  });
-});
-
-// 动态路由参数
-router.get('/api/users/:id', (req, res) => {
-  const userId = req.params.id;
-  res.json({
-    id: userId,
-    name: 'User ' + userId,
-  });
-});
-```
-
-**拆分路由模块**（推荐）
-
-当路由变多时，可以按功能拆分：
-
-```typescript
-// server/routes/users.ts
-import { Router } from 'express';
-
-const router = Router();
-
-router.get('/api/users', (req, res) => {
-  // 用户列表逻辑
-  res.json({ users: [] });
-});
-
-router.post('/api/users', (req, res) => {
-  // 创建用户逻辑
-  res.json({ success: true });
-});
-
-export default router;
-```
-
-然后在 `server/server.ts` 中注册：
-
-```typescript
-import usersRouter from './routes/users';
-
-// 注册路由
-app.use(usersRouter);
-```
-
-**前端调用 API**
-
-```typescript
-// GET 请求
-async function getUsers() {
-  const response = await fetch('/api/users');
-  const data = await response.json();
-  console.log(data);
-}
-
-// POST 请求
-async function createUser(name: string) {
-  const response = await fetch('/api/users', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ name }),
-  });
-  const data = await response.json();
-  console.log(data);
-}
-```
-
-**API 最佳实践**
-
-- ✅ 所有 API 路由以 `/api` 开头，避免与前端路由冲突
-- ✅ 使用 RESTful 设计：GET 查询、POST 创建、PUT 更新、DELETE 删除
-- ✅ 返回统一的响应格式：`{ success: boolean, data?: any, error?: string }`
-- ✅ 添加错误处理和参数验证
-
-### 2. 样式开发
-
-**使用 Tailwind CSS**
-
-本项目使用 Tailwind CSS 进行样式开发，支持亮色/暗色模式自动切换。
-
-```typescript
-// 使用 Tailwind 工具类
-app.innerHTML = `
-  <div class="flex items-center justify-center min-h-screen bg-white dark:bg-black">
-    <h1 class="text-4xl font-bold text-black dark:text-white">
-      Hello World
-    </h1>
-  </div>
-`;
-```
-
-**主题变量**
-
-主题变量定义在 `src/index.css` 中，支持自动适配系统主题：
-
-```css
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+**配置文件模板：**
+```json
+{
+  "server": {"port": 3000, "path": "/webhook"},
+  "auth": {"token": "your-secret-token"},
+  "channels": {
+    "wechat_webhook": {"enabled": false, "type": "webhook", "url": ""}
   }
 }
 ```
 
-**常用 Tailwind 类名**
+**3. 创建 docker-compose.yml**
 
-- 布局：`flex`, `grid`, `container`, `mx-auto`
-- 间距：`p-4`, `m-4`, `gap-4`, `space-x-4`
-- 颜色：`bg-white`, `text-black`, `dark:bg-black`, `dark:text-white`
-- 排版：`text-lg`, `font-bold`, `leading-8`, `tracking-tight`
-- 响应式：`sm:`, `md:`, `lg:`, `xl:`
+在项目根目录创建 `docker-compose.yml`：
 
-### 2. 依赖管理
+```yaml
+version: '3.8'
 
-**必须使用 pnpm 管理依赖**
+services:
+  message-forwarder:
+    image: 247798124/message-forwarder:latest
+    container_name: message-forwarder
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # Webhook 接收
+      - "5000:5000"  # Web 管理界面
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+    environment:
+      - TZ=Asia/Shanghai
+      - CONFIG_PATH=/app/config/config.json
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+```
+
+**4. 启动服务**
 
 ```bash
-# ✅ 安装依赖
-pnpm install
-
-# ✅ 添加新依赖
-pnpm add package-name
-
-# ✅ 添加开发依赖
-pnpm add -D package-name
-
-# ❌ 禁止使用 npm 或 yarn
-# npm install  # 错误！
-# yarn add     # 错误！
+docker-compose up -d
 ```
 
-项目已配置 `preinstall` 脚本，使用其他包管理器会报错。
+**5. 查看日志**
 
-### 3. TypeScript 开发
-
-**类型安全**
-
-充分利用 TypeScript 的类型系统，确保代码质量：
-
-```typescript
-// 定义接口
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
-
-// 使用类型
-function createUser(data: User): void {
-  console.log(`Creating user: ${data.name}`);
-}
-
-// DOM 操作类型推断
-const button = document.querySelector<HTMLButtonElement>('#my-button');
-if (button) {
-  button.addEventListener('click', () => {
-    console.log('Button clicked');
-  });
-}
+```bash
+docker-compose logs -f
 ```
 
-**避免 any 类型**
+**6. 停止服务**
 
-尽量避免使用 `any`，使用 `unknown` 或具体类型：
+```bash
+docker-compose down
+```
 
-```typescript
-// ❌ 不推荐
-function process(data: any) { }
+---
 
-// ✅ 推荐
-function process(data: unknown) {
-  if (typeof data === 'string') {
-    console.log(data.toUpperCase());
+### 方式二：Docker 命令
+
+**拉取镜像**
+```bash
+docker pull 247798124/message-forwarder:latest
+```
+
+**运行容器**
+```bash
+docker run -d \
+  --name message-forwarder \
+  -p 3000:3000 \
+  -p 5000:5000 \
+  -v $(pwd)/config.json:/app/config.json \
+  -v $(pwd)/logs:/app/logs \
+  -v $(pwd)/cache:/app/cache \
+  --restart unless-stopped \
+  247798124/message-forwarder:latest
+```
+
+**查看日志**
+```bash
+docker logs -f message-forwarder
+```
+
+**停止容器**
+```bash
+docker stop message-forwarder
+docker rm message-forwarder
+```
+
+---
+
+### 方式三：构建本地镜像
+
+```bash
+# 构建镜像
+docker build -t message-forwarder .
+
+# 运行容器
+docker run -d --name message-forwarder \
+  -p 3000:3000 -p 5000:5000 \
+  -v $(pwd)/config.json:/app/config.json \
+  message-forwarder
+```
+
+---
+
+## 📋 快速配置
+
+### 1. 编辑 config.json
+
+```bash
+# 创建配置文件
+nano config.json
+# 或
+notepad config.json
+```
+
+**基础配置模板：**
+
+```json
+{
+  "server": {
+    "port": 3000,
+    "path": "/webhook"
+  },
+  "auth": {
+    "token": "your-secret-token-here"
+  },
+  "channels": {
+    "wechat_webhook": {
+      "enabled": true,
+      "type": "webhook",
+      "url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_KEY"
+    }
   }
 }
 ```
 
-## 常见开发场景
+### 2. 重启服务
 
-### 添加新页面
-
-本项目是单页应用（SPA），如需多页面：
-
-1. 在 `src/` 下创建新的 `.ts` 文件
-2. 在 `vite.config.ts` 中配置多入口
-3. 创建对应的 `.html` 文件
-
-### DOM 操作
-
-```typescript
-// 获取元素
-const app = document.getElementById('app');
-const button = document.querySelector<HTMLButtonElement>('.my-button');
-
-// 动态创建元素
-const div = document.createElement('div');
-div.className = 'flex items-center gap-4';
-div.textContent = 'Hello World';
-app?.appendChild(div);
-
-// 事件监听
-button?.addEventListener('click', (e) => {
-  console.log('Clicked', e);
-});
+```bash
+docker-compose restart
+# 或
+docker restart message-forwarder
 ```
 
-### 数据获取
+### 3. 发送测试消息
 
-```typescript
-// Fetch API
-async function fetchData() {
-  try {
-    const response = await fetch('https://api.example.com/data');
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Failed to fetch data:', error);
+```bash
+curl -X POST "http://localhost:3000/webhook?token=your-secret-token-here" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "测试消息"}'
+```
+
+---
+
+## 🔧 常用命令
+
+### Docker Compose
+
+```bash
+# 启动服务
+docker-compose up -d
+
+# 停止服务
+docker-compose down
+
+# 查看日志
+docker-compose logs -f
+
+# 重启服务
+docker-compose restart
+
+# 重新构建并启动
+docker-compose up -d --build
+
+# 查看服务状态
+docker-compose ps
+```
+
+### Docker
+
+```bash
+# 查看容器状态
+docker ps -a
+
+# 查看日志
+docker logs -f message-forwarder
+
+# 进入容器
+docker exec -it message-forwarder bash
+
+# 重启容器
+docker restart message-forwarder
+
+# 停止并删除容器
+docker stop message-forwarder
+docker rm message-forwarder
+```
+
+---
+
+## 📁 数据持久化
+
+| 路径 | 说明 | 是否必需 |
+|------|------|----------|
+| `./config/config.json` | 配置文件 | ✅ 是 |
+| `./logs/` | 日志文件 | ❌ 否 |
+| `./cache/` | Token 缓存 | ❌ 否 |
+
+---
+
+## ⚠️ 注意事项
+
+**1. 配置文件格式**
+
+确保 `config/config.json` 是文件而不是文件夹！
+
+```bash
+# 错误：Docker 会自动创建文件夹
+docker-compose up -d
+
+# 正确：先创建文件
+mkdir -p config
+nano config/config.json
+docker-compose up -d
+```
+
+**2. 配置文件编码**
+
+使用 **UTF-8 无 BOM** 编码保存 JSON 文件，否则会导致解析失败。
+
+**3. 端口占用**
+
+确保端口 3000 和 5000 未被占用：
+
+```bash
+# Windows
+netstat -ano | findstr :3000
+
+# Linux/Mac
+lsof -i :3000
+```
+
+---
+
+## 📋 docker-compose.yml 完整配置
+
+### 基础配置
+
+```yaml
+version: '3.8'
+
+services:
+  message-forwarder:
+    image: 247798124/message-forwarder:latest  # Docker Hub 镜像
+    container_name: message-forwarder          # 容器名称
+    restart: unless-stopped                    # 自动重启策略
+    ports:
+      - "3000:3000"  # Webhook 接收端口
+      - "5000:5000"  # Web 管理界面端口
+    volumes:
+      - ./config:/app/config    # 配置文件目录
+      - ./logs:/app/logs        # 日志目录
+      - ./cache:/app/cache      # Token 缓存目录
+    environment:
+      - TZ=Asia/Shanghai        # 时区设置
+      - CONFIG_PATH=/app/config/config.json  # 配置文件路径
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health')"]
+      interval: 30s   # 健康检查间隔
+      timeout: 10s    # 超时时间
+      retries: 3      # 重试次数
+```
+
+### 配置说明
+
+| 参数 | 说明 | 可选值 |
+|------|------|--------|
+| `image` | Docker 镜像地址 | `247798124/message-forwarder:latest` |
+| `restart` | 容器重启策略 | `unless-stopped`（推荐） |
+| `ports` | 端口映射 | `3000:3000`（Webhook）<br>`5000:5000`（Web UI） |
+| `volumes` | 数据卷挂载 | `./config:/app/config`（配置）<br>`./logs:/app/logs`（日志）<br>`./cache:/app/cache`（缓存） |
+| `environment` | 环境变量 | `TZ=Asia/Shanghai`（时区）<br>`CONFIG_PATH`（配置文件路径） |
+
+---
+
+## 🔧 Docker Compose 常用命令
+
+```bash
+# 启动服务
+docker-compose up -d
+
+# 停止服务
+docker-compose down
+
+# 重启服务
+docker-compose restart
+
+# 重新构建并启动
+docker-compose up -d --build
+
+# 查看服务状态
+docker-compose ps
+
+# 查看日志
+docker-compose logs -f
+
+# 查看特定服务日志
+docker-compose logs -f message-forwarder
+
+# 进入容器
+docker-compose exec message-forwarder bash
+
+# 更新镜像并重启
+docker-compose pull
+docker-compose up -d
+```
+
+---
+
+## 🌟 支持的推送渠道
+
+| 渠道 | 状态 | 说明 |
+|------|------|------|
+| 企业微信应用 | ✅ | 支持指定用户/部门 |
+| 企业微信机器人 | ✅ | Webhook 方式 |
+| 钉钉机器人 | ✅ | Webhook 方式 |
+| Telegram Bot | ✅ | Bot Token |
+| 邮件通知 | ✅ | SMTP（支持 SSL） |
+
+---
+
+## 🌐 访问地址
+
+| 服务 | 地址 | 说明 |
+|------|------|------|
+| Webhook 接收 | `http://localhost:3000/webhook` | 接收消息推送 |
+| Web 管理界面 | `http://localhost:5000` | 可视化配置管理 |
+| 健康检查 | `http://localhost:3000/health` | 服务状态 |
+
+---
+
+## 📝 配置说明
+
+### 企业微信机器人
+
+```json
+{
+  "channels": {
+    "wechat_webhook": {
+      "enabled": true,
+      "type": "webhook",
+      "url": "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_KEY"
+    }
   }
 }
-
-// 使用数据
-fetchData().then(data => {
-  console.log(data);
-});
 ```
 
-### 环境变量
+### 企业微信应用
 
-在 `.env` 文件中定义环境变量（需以 `VITE_` 开头）：
+```json
+{
+  "channels": {
+    "wechat_app": {
+      "enabled": true,
+      "type": "app",
+      "corpid": "ww1234567890abcdef",
+      "corpsecret": "abcdefghijklmnopqrstuvwxyz123456",
+      "agentid": 1000001,
+      "touser": "@all"
+    }
+  }
+}
+```
+
+### Telegram
+
+```json
+{
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "type": "bot",
+      "botToken": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+      "chatId": "-1001234567890"
+    }
+  }
+}
+```
+
+### 邮件通知（163 邮箱示例）
+
+```json
+{
+  "channels": {
+    "email": {
+      "enabled": true,
+      "type": "smtp",
+      "smtpHost": "smtp.163.com",
+      "smtpPort": 465,
+      "username": "your@163.com",
+      "password": "your-auth-code",
+      "to": "recipient@example.com"
+    }
+  }
+}
+```
+
+---
+
+## 🔍 故障排查
+
+### 查看日志
 
 ```bash
-VITE_API_URL=https://api.example.com
+# Docker Compose
+docker-compose logs -f
+
+# Docker
+docker logs -f message-forwarder
 ```
 
-在代码中使用：
-
-```typescript
-const apiUrl = import.meta.env.VITE_API_URL;
-console.log(apiUrl); // https://api.example.com
-```
-
-## 技术栈
-
-**前端：**
-- **构建工具**: Vite 7.x
-- **语言**: TypeScript 5.x
-- **样式**: Tailwind CSS 3.x
-
-**后端：**
-- **框架**: Express 4.x
-- **内置中间件**: express.json(), express.urlencoded(), express.static()
-
-**工具：**
-- **包管理器**: pnpm 9+
-- **运行时**: Node.js 18+
-- **开发工具**: tsx (TypeScript 执行器)
-
-## 参考文档
-
-**前端：**
-- [Vite 官方文档](https://cn.vitejs.dev/)
-- [TypeScript 官方文档](https://www.typescriptlang.org/zh/docs/)
-- [Tailwind CSS 文档](https://tailwindcss.com/docs)
-
-**后端：**
-- [Express 官方文档](https://expressjs.com/)
-- [Express 中文文档](https://expressjs.com/zh-cn/)
-
-## 重要提示
-
-1. **必须使用 pnpm** 作为包管理器
-2. **使用 TypeScript** 进行类型安全开发，避免使用 `any`
-3. **使用 Tailwind CSS** 进行样式开发，支持响应式和暗色模式
-4. **环境变量必须以 `VITE_` 开头** 才能在客户端代码中访问
-5. **开发时使用 `coze dev`**，支持热更新和快速刷新
-6. **API 路由以 `/api` 开头**，避免与前端路由冲突
-7. **单进程架构**：开发和生产环境都是前后端在同一进程中运行
-
-## 常见问题
-
-**Q: 如何分离前后端端口？**
-
-如果需要前后端分离部署，可以：
-- 前端：使用 `npx vite` 单独启动（默认端口 5173）
-- 后端：修改 `server.ts`，移除 Vite middleware，单独启动
-
-**Q: 如何添加数据库？**
+### 服务无法启动
 
 ```bash
-# 安装数据库客户端（以 PostgreSQL 为例）
-pnpm add pg
-pnpm add -D @types/pg
+# 检查端口占用
+netstat -ano | findstr :3000
 
-# 在 server.ts 中使用
-import { Pool } from 'pg';
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+# 检查配置文件
+docker exec message-forwarder python -c "import json; json.load(open('/app/config.json'))"
 ```
 
-**Q: 如何部署？**
+### 清除缓存
 
-1. 运行 `coze build` 构建前后端
-2. 将整个项目上传到服务器
-3. 运行 `pnpm install --prod`
-4. 运行 `coze start` 启动服务
+```bash
+# 删除 Token 缓存
+rm -rf cache/tokens.json
+# 或
+docker exec message-forwarder rm -rf /app/cache/tokens.json
+
+# 重启服务
+docker-compose restart
+```
+
+---
+
+## 🔗 相关链接
+
+- **GitHub**: https://github.com/gowfqk/message-forwarder
+- **Docker Hub**: https://hub.docker.com/r/247798124/message-forwarder
+- **Issues**: https://github.com/gowfqk/message-forwarder/issues
+
+---
+
+## 📄 License
+
+MIT

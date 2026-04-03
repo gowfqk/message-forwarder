@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  message-forwarder:
+    image: 247798124/message-forwarder:latest
+    container_name: message-forwarder
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "5000:5000"
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
+      - ./cache:/app/cache
+    environment:
+      - TZ=Asia/Shanghai
+      - CONFIG_PATH=/app/config/config.json
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
