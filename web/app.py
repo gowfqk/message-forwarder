@@ -16,7 +16,18 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 
 # 项目根目录
 BASE_DIR = Path(__file__).parent.parent
-CONFIG_FILE = BASE_DIR / 'config.json'
+
+# 加载配置（支持环境变量 CONFIG_PATH）
+import os
+config_path_env = os.environ.get('CONFIG_PATH')
+if config_path_env:
+    CONFIG_FILE = Path(config_path_env)
+else:
+    # 优先使用 config/config.json，兼容旧的 config.json
+    CONFIG_FILE = BASE_DIR / 'config' / 'config.json'
+    if not CONFIG_FILE.exists():
+        CONFIG_FILE = BASE_DIR / 'config.json'
+
 LOG_FILE = BASE_DIR / 'logs' / 'forward.log'
 TOKEN_CACHE = BASE_DIR / 'cache' / 'tokens.json'
 PID_FILE = BASE_DIR / 'web' / '.server.pid'
@@ -40,8 +51,15 @@ def load_config():
 
 def save_config(config):
     """保存配置"""
-    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+    # 如果使用环境变量指定的配置文件路径，保存到该位置
+    # 否则保存到默认位置
+    if config_path_env:
+        save_path = Path(config_path_env)
+    else:
+        save_path = CONFIG_FILE
+    
+    save_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(save_path, 'w', encoding='utf-8') as f:
         json.dump(config, f, indent=2, ensure_ascii=False)
 
 
